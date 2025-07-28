@@ -45,18 +45,18 @@ Save these in `C:\Windows-Server-Patch-Automation\Scripts`:
 1. **`Install-Updates.ps1`** (Main update script):  
    ```powershell
    # CONFIGURATION
-$LogFile = "C:\Windows-Server-Patch-Automation\Logs\Updates-$(Get-Date -Format 'yyyyMMdd-HHmm').log"
+   $LogFile = "C:\Windows-Server-Patch-Automation\Logs\Updates-$(Get-Date -Format 'yyyyMMdd-HHmm').log"
 
-# Create the log directory if it doesn't exist
-New-Item -Path (Split-Path $LogFile -Parent) -ItemType Directory -Force | Out-Null
+   # Create the log directory if it doesn't exist
+   New-Item -Path (Split-Path $LogFile -Parent) -ItemType Directory -Force | Out-Null
 
-# Import module
-Import-Module PSWindowsUpdate
+   # Import module
+   Import-Module PSWindowsUpdate
 
-# Start logging
-"==== UPDATE PROCESS STARTED: $(Get-Date) ====" | Out-File $LogFile
+   # Start logging
+   "==== UPDATE PROCESS STARTED: $(Get-Date) ====" | Out-File $LogFile
 
-try {
+   try {
     # Check for updates from Microsoft
     $Updates = Get-WindowsUpdate -MicrosoftUpdate -AcceptAll -ErrorAction Stop
     
@@ -70,29 +70,29 @@ try {
     } else {
         "No updates available" | Out-File $LogFile -Append
     }
-} catch {
+   } catch {
     "ERROR: $_" | Out-File $LogFile -Append
     "==== UPDATE PROCESS FAILED ====" | Out-File $LogFile -Append
     exit 1
-}
+   }
    ```
 
 2. **`System-Backup.ps1`** (Pre-update backup):  
    ```powershell
-# System-Backup.ps1 - VMware Workstation Pro Optimized (Fixed)
-# Added robust directory creation and error handling
+   # System-Backup.ps1 - VMware Workstation Pro Optimized (Fixed)
+   # Added robust directory creation and error handling
 
-param(
+   param(
     [string]$VMXPath = "",
     [string]$SnapshotName = "Pre-Update-$(Get-Date -Format 'yyyyMMdd-HHmmss')",
     [switch]$SkipSnapshot = $false
-)
+   )
 
-Write-Host "=== System Backup Script - VMware Workstation Pro ===" -ForegroundColor Cyan
-Write-Host "Server: $env:COMPUTERNAME | Date: $(Get-Date)" -ForegroundColor White
+   Write-Host "=== System Backup Script - VMware Workstation Pro ===" -ForegroundColor Cyan
+   Write-Host "Server: $env:COMPUTERNAME | Date: $(Get-Date)" -ForegroundColor White
 
-# Function to create directories with error handling
-function Ensure-DirectoryExists {
+   # Function to create directories with error handling
+   function Ensure-DirectoryExists {
     param([string]$Path)
     try {
         if (-not (Test-Path -Path $Path)) {
@@ -105,39 +105,39 @@ function Ensure-DirectoryExists {
         Write-Host "✗ Critical: Could not create directory '$Path': $($_.Exception.Message)" -ForegroundColor Red
         return $false
     }
-}
+   }
 
-# --- Rest of functions remain unchanged ---
+   # --- Rest of functions remain unchanged ---
 
-# Create main backup directory with fallback
-$BackupBase = "C:\PatchAutomation\Backups"
-if (-not (Ensure-DirectoryExists -Path $BackupBase)) {
+   # Create main backup directory with fallback
+   $BackupBase = "C:\PatchAutomation\Backups"
+   if (-not (Ensure-DirectoryExists -Path $BackupBase)) {
     # Fallback to TEMP directory if primary location fails
     $BackupBase = Join-Path $env:TEMP "PatchAutomation\Backups"
     if (-not (Ensure-DirectoryExists -Path $BackupBase)) {
         Write-Host "✗ FATAL: Could not create any backup directories. Exiting." -ForegroundColor Red
         exit 1
     }
-}
+   }
 
-# Create timestamped backup directory
-$Timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-$BackupLocation = Join-Path $BackupBase "SystemBackup_$Timestamp"
-if (-not (Ensure-DirectoryExists -Path $BackupLocation)) {
+   # Create timestamped backup directory
+   $Timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+   $BackupLocation = Join-Path $BackupBase "SystemBackup_$Timestamp"
+   if (-not (Ensure-DirectoryExists -Path $BackupLocation)) {
     exit 1
-}
+   }
 
-# --- VMware snapshot section remains unchanged ---
+   # --- VMware snapshot section remains unchanged ---
 
-# File-based backup with improved error handling
-$BackupItems = @(
+   # File-based backup with improved error handling
+   $BackupItems = @(
     @{ Source = "C:\Windows\System32\config"; Dest = "Registry"; Description = "System Registry files" },
     @{ Source = "C:\Windows\System32\drivers\etc"; Dest = "SystemFiles"; Description = "System configuration files" },
     @{ Source = "C:\ProgramData\VMware"; Dest = "VMwareData"; Description = "VMware Tools configuration" },
     @{ Source = "C:\ProgramData\Microsoft"; Dest = "MicrosoftData"; Description = "Microsoft application data" }
-)
+   )
 
-foreach ($Item in $BackupItems) {
+   foreach ($Item in $BackupItems) {
     if (-not (Test-Path $Item.Source)) {
         Write-Host "⚠ Source not found: $($Item.Source)" -ForegroundColor Yellow
         continue
@@ -170,49 +170,49 @@ foreach ($Item in $BackupItems) {
     catch {
         Write-Host "  ✗ Failed: $($_.Exception.Message)" -ForegroundColor Red
     }
-}
+   }
 
-# --- Rest of script remains unchanged with registry exports and summary ---
+   # --- Rest of script remains unchanged with registry exports and summary ---
    ```
 
 3. **`Generate-Report.ps1`** (Compliance report):  
    ```powershell
-# CONFIGURATION
-$ReportPath = "C:\Windows-Server-Patch-Automation\Reports\UpdateReport-$(Get-Date -Format 'yyyyMMdd').html"
+   # CONFIGURATION
+   $ReportPath = "C:\Windows-Server-Patch-Automation\Reports\UpdateReport-$(Get-Date -Format 'yyyyMMdd').html"
 
-# Create the report directory if it doesn't exist
-New-Item -Path (Split-Path $ReportPath -Parent) -ItemType Directory -Force | Out-Null
+   # Create the report directory if it doesn't exist
+   New-Item -Path (Split-Path $ReportPath -Parent) -ItemType Directory -Force | Out-Null
 
-# Import module
-Import-Module PSWindowsUpdate
+   # Import module
+   Import-Module PSWindowsUpdate
 
-# Get last 10 successfully installed updates
-$UpdateHistory = Get-WUHistory -MaxDate (Get-Date) | 
+   # Get last 10 successfully installed updates
+   $UpdateHistory = Get-WUHistory -MaxDate (Get-Date) | 
                  Where-Object { $_.Result -eq 'Succeeded' } | 
                  Select-Object -First 10 | 
                  Select-Object Date, Title, Description, Result
 
-# Generate HTML report
-$HtmlReport = @"
-<html>
-<head><title>Update Report</title></head>
-<body>
-<h1>Windows Update Report - $(Get-Date)</h1>
-<h2>Server: $env:COMPUTERNAME</h2>
-<table border=1>
-<tr><th>Date</th><th>Update</th><th>Status</th></tr>
-"@
+   # Generate HTML report
+   $HtmlReport = @"
+   <html>
+   <head><title>Update Report</title></head>
+   <body>
+   <h1>Windows Update Report - $(Get-Date)</h1>
+   <h2>Server: $env:COMPUTERNAME</h2>
+   <table border=1>
+   <tr><th>Date</th><th>Update</th><th>Status</th></tr>
+   "@
 
-if (-not $UpdateHistory) {
+   if (-not $UpdateHistory) {
     $HtmlReport += "<tr><td colspan=3>No successful updates found</td></tr>"
-} else {
+   } else {
     foreach ($Update in $UpdateHistory) {
         $HtmlReport += "<tr><td>$($Update.Date)</td><td>$($Update.Title)</td><td>$($Update.Result)</td></tr>"
     }
-}
+   }
 
-$HtmlReport += "</table></body></html>"
-$HtmlReport | Out-File $ReportPath
+   $HtmlReport += "</table></body></html>"
+   $HtmlReport | Out-File $ReportPath
    ```
 
 ---
