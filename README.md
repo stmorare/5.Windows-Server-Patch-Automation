@@ -92,6 +92,3 @@ To restore from backup:
 wbadmin start systemstaterecovery -version:MM/DD/YYYY -backuptarget:C:\Windows-Server-Patch-Automation\Backups
 ```
 
-## 🤝 Acknowledgements
-
-- Claude Sonnet | Deepseek ai | Stackoverflow
